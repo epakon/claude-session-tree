@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session tree</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #656d76; --border: #d8dee4;
+    --root: #2f5bd3; --returned: #1a7f37; --open: #8c959f; --draft: #bf8700; --accent: #2f5bd3;
+    --code-bg: #f1f3f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --panel: #171a21; --text: #e6e8eb; --muted: #9aa4ae; --border: #2c323b;
+      --root: #6b8cff; --returned: #3fb950; --open: #6e7781; --draft: #d29922; --accent: #6b8cff;
+      --code-bg: #20242c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+  select, input[type=search], button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  main { display: grid; grid-template-columns: 1fr 420px; height: calc(100% - 53px); }
+  #graph { position: relative; min-width: 0; }
+  #cy { position: absolute; inset: 0; }
+  .legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); border: 1px dashed transparent; }
+  .legend .draft::before { background: transparent; border-color: var(--draft); }
+  .legend .line::before { width: 18px; height: 0; border-radius: 0; border-top: 2px dashed var(--returned); background: none; }
+  .hint { position: absolute; right: 12px; bottom: 12px; font-size: 12px; color: var(--muted); }
+  aside { border-left: 1px solid var(--border); background: var(--panel); overflow: auto; padding: 16px 18px; }
+  aside h2 { margin: 0 0 4px; font-size: 18px; }
+  aside h3 { margin: 18px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; color: #fff; background: var(--c); margin-right: 6px; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 13px; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
+  .doc { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); overflow-wrap: anywhere; }
+  .doc h1, .doc h2, .doc h3, .doc h4 { font-size: 14px; margin: 10px 0 4px; text-transform: none; letter-spacing: 0; color: var(--text); }
+  .doc p { margin: 6px 0; }
+  .doc ul, .doc ol { margin: 6px 0; padding-left: 20px; }
+  .doc code { background: var(--code-bg); padding: 0 4px; border-radius: 4px; font-size: 12px; }
+  .doc pre { background: var(--code-bg); padding: 8px; border-radius: 6px; overflow: auto; font-size: 12px; }
+  .doc pre code { background: none; padding: 0; }
+  .empty { color: var(--muted); font-style: italic; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .dev { font-size: 12px; color: var(--muted); }
+  .placeholder { color: var(--muted); margin-top: 40px; text-align: center; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60% 40%; } aside { border-left: 0; border-top: 1px solid var(--border); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Session tree</h1>
+  <span class="meta" id="meta"></span>
+  <div class="controls">
+    <label>Project <select id="project"></select></label>
+    <label>Show <select id="state">
+      <option value="all">All forks</option>
+      <option value="returned">Returned</option>
+      <option value="not-returned">Not returned</option>
+      <option value="draft">Drafts</option>
+    </select></label>
+    <input type="search" id="search" placeholder="Search topics and results">
+    <button id="fit" title="Fit the graph to the window">Fit</button>
+  </div>
+</header>
+<main>
+  <section id="graph">
+    <div id="cy"></div>
+    <div class="legend">
+      <span style="--c: var(--root)">Main conversation</span>
+      <span style="--c: var(--returned)">Fork returned</span>
+      <span style="--c: var(--open)">Fork not returned</span>
+      <span class="draft">Draft, not started</span>
+      <span class="line">Result sent back</span>
+    </div>
+    <div class="hint">Click a box for details. Double-click to fold its branch. Reload the page for the latest state.</div>
+  </section>
+  <aside id="details"><p class="placeholder">Select a conversation or fork to see its brief and result.</p></aside>
+</main>
+
+<!-- VENDOR -->
+
+<script>
+const DATA = "__SESSION_TREE_DATA__";
+
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const formatDate = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "");
+const STATE_TEXT = { returned: "Returned", "not-returned": "Not returned", draft: "Draft" };
+const STATE_COLOR = { returned: "--returned", "not-returned": "--open", draft: "--draft" };
+
+function inline(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+}
+
+/** A small Markdown subset: headings, lists, code blocks, bold, italics and inline code. All text is escaped. */
+function markdown(source) {
+  const lines = String(source || "").replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let list = null;
+  let paragraph = [];
+  const flush = () => {
+    if (paragraph.length) { out.push(`<p>${inline(paragraph.join(" "))}</p>`); paragraph = []; }
+    if (list) { out.push(`</${list}>`); list = null; }
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
+      flush();
+      const code = [];
+      while (++i < lines.length && !lines[i].startsWith("```")) code.push(lines[i]);
+      out.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+      continue;
+    }
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+    const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
+    const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (heading) { flush(); out.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`); }
+    else if (bullet || numbered) {
+      if (paragraph.length) { out.push(`<p>${inline(paragraph.join(" "))}</p>`); paragraph = []; }
+      const kind = bullet ? "ul" : "ol";
+      if (list !== kind) { if (list) out.push(`</${list}>`); out.push(`<${kind}>`); list = kind; }
+      out.push(`<li>${inline((bullet || numbered)[1])}</li>`);
+    } else if (!line.trim()) flush();
+    else { if (list) { out.push(`</${list}>`); list = null; } paragraph.push(line.trim()); }
+  }
+  flush();
+  return out.join("\n");
+}
+
+const nodesById = new Map(DATA.nodes.map((node) => [node.id, node]));
+const parentOf = new Map(DATA.edges.filter((edge) => edge.kind === "fork").map((edge) => [edge.target, edge.source]));
+const rootOf = (id) => { let current = id; while (parentOf.has(current)) current = parentOf.get(current); return current; };
+const projectName = (cwd) => (cwd ? cwd.split("/").filter(Boolean).pop() : "Unknown project");
+
+function displayLabel(node) {
+  if (!node.fork) return node.title;
+  return `${node.fork.topic}\n${node.fork.label} · ${STATE_TEXT[node.fork.state].toLowerCase()}`;
+}
+
+const elements = [
+  ...DATA.nodes.map((node) => ({
+    data: { id: node.id, label: displayLabel(node), kind: node.fork ? "fork" : "root", state: node.fork ? node.fork.state : "root", project: nodesById.get(rootOf(node.id)).cwd || "" },
+  })),
+  ...DATA.edges.map((edge) => ({ data: { id: edge.id, source: edge.source, target: edge.target, kind: edge.kind, label: edge.kind === "fork" ? edge.label : "" } })),
+];
+
+const cy = cytoscape({
+  container: document.getElementById("cy"),
+  elements,
+  wheelSensitivity: 0.3,
+  minZoom: 0.2,
+  maxZoom: 2.5,
+  style: [
+    { selector: "node", style: {
+      shape: "round-rectangle", label: "data(label)", "text-wrap": "wrap", "text-max-width": 180, "text-valign": "center", "text-halign": "center",
+      "font-size": 12, color: "#fff", width: 200, height: 54, padding: 6, "background-color": css("--open"), "border-width": 0,
+    } },
+    { selector: 'node[kind="root"]', style: { "background-color": css("--root"), "font-weight": 600, "font-size": 13, height: 60 } },
+    { selector: 'node[state="returned"]', style: { "background-color": css("--returned") } },
+    { selector: 'node[state="not-returned"]', style: { "background-color": css("--open"), opacity: 0.75 } },
+    { selector: 'node[state="draft"]', style: { "background-color": css("--panel"), color: css("--text"), "border-width": 2, "border-style": "dashed", "border-color": css("--draft") } },
+    { selector: "node:selected", style: { "border-width": 3, "border-style": "solid", "border-color": css("--text") } },
+    { selector: "node.folded", style: { "border-width": 3, "border-style": "double", "border-color": css("--text") } },
+    { selector: "edge", style: {
+      width: 2, "curve-style": "bezier", "line-color": css("--border"), "target-arrow-shape": "triangle", "target-arrow-color": css("--border"),
+      label: "data(label)", "font-size": 10, color: css("--muted"), "text-background-color": css("--bg"), "text-background-opacity": 1, "text-background-padding": 2,
+    } },
+    { selector: 'edge[kind="return"]', style: {
+      "line-style": "dashed", "line-color": css("--returned"), "target-arrow-color": css("--returned"), "curve-style": "unbundled-bezier",
+      "control-point-distances": [-60], "control-point-weights": [0.5],
+    } },
+    { selector: ".hidden", style: { display: "none" } },
+    { selector: ".dimmed", style: { opacity: 0.25 } },
+  ],
+  layout: { name: "preset" },
+});
+
+function relayout() {
+  const visible = cy.elements().not(".hidden");
+  visible.filter((el) => el.isNode() || el.data("kind") === "fork")
+    .layout({ name: "dagre", rankDir: "TB", nodeSep: 40, rankSep: 70, animate: false, fit: true, padding: 30 })
+    .run();
+}
+
+function descendants(node) {
+  return node.successors('edge[kind="fork"]').targets();
+}
+
+function applyFilters() {
+  const project = document.getElementById("project").value;
+  const state = document.getElementById("state").value;
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  cy.batch(() => {
+    cy.elements().removeClass("hidden dimmed");
+    cy.nodes().forEach((el) => {
+      if (project && el.data("project") !== project) el.addClass("hidden");
+    });
+    cy.nodes(".folded").forEach((el) => descendants(el).addClass("hidden"));
+    cy.edges().forEach((edge) => { if (edge.source().hasClass("hidden") || edge.target().hasClass("hidden")) edge.addClass("hidden"); });
+    if (state !== "all" || query) {
+      cy.nodes('[kind="fork"]').forEach((el) => {
+        const node = nodesById.get(el.id());
+        const text = `${node.title} ${node.fork.topic} ${node.fork.brief || ""} ${node.fork.result || ""}`.toLowerCase();
+        if ((state !== "all" && node.fork.state !== state) || (query && !text.includes(query))) el.addClass("dimmed");
+      });
+    }
+  });
+  relayout();
+}
+
+function copyButton(text, label) {
+  return `<button data-copy="${escapeHtml(text)}">${escapeHtml(label)}</button>`;
+}
+
+function showDetails(id) {
+  const node = nodesById.get(id);
+  const panel = document.getElementById("details");
+  const forks = DATA.edges.filter((edge) => edge.kind === "fork" && edge.source === id).map((edge) => nodesById.get(edge.target));
+  const parent = parentOf.has(id) ? nodesById.get(parentOf.get(id)) : null;
+  const parts = [];
+
+  if (node.fork) {
+    const f = node.fork;
+    parts.push(`<h2>${escapeHtml(f.topic)}</h2>`);
+    parts.push(`<div><span class="badge" style="--c: var(${STATE_COLOR[f.state]})">${STATE_TEXT[f.state]}</span><span class="dev">${escapeHtml(f.label)} · fork of “${escapeHtml(parent ? parent.title : "")}”</span></div>`);
+    parts.push(`<h3>Timeline</h3><dl class="facts">
+      <dt>Created</dt><dd>${formatDate(f.createdAt)}</dd>
+      <dt>Started</dt><dd>${f.launchedAt ? formatDate(f.launchedAt) : '<span class="empty">not started</span>'}</dd>
+      <dt>Returned</dt><dd>${f.returnedAt ? formatDate(f.returnedAt) : '<span class="empty">not returned</span>'}</dd>
+      <dt>Delivered</dt><dd>${f.deliveredAt ? formatDate(f.deliveredAt) : f.returnedAt ? '<span class="empty">with the next message in the parent</span>' : "—"}</dd>
+    </dl>`);
+    parts.push(`<h3>Result sent back</h3>${f.result ? `<div class="doc">${markdown(f.result)}</div>` : '<p class="empty">No result yet.</p>'}`);
+    parts.push(`<h3>Brief from the parent</h3>${f.brief ? `<div class="doc">${markdown(f.brief)}</div>` : '<p class="empty">No brief.</p>'}`);
+  } else {
+    parts.push(`<h2>${escapeHtml(node.title)}</h2><div class="dev">Main conversation · ${escapeHtml(projectName(node.cwd))}</div>`);
+  }
+
+  if (forks.length) {
+    parts.push(`<h3>Forks (${forks.length})</h3><ul>${forks.map((child) => `<li><a href="#" data-select="${escapeHtml(child.id)}">${escapeHtml(child.fork.label)} ${escapeHtml(child.fork.topic)}</a> — ${STATE_TEXT[child.fork.state].toLowerCase()}</li>`).join("")}</ul>`);
+  }
+
+  parts.push(`<h3>For developers</h3><dl class="facts dev">
+    <dt>Session</dt><dd>${escapeHtml(node.id)}</dd>
+    <dt>Project</dt><dd>${escapeHtml(node.cwd || "")}</dd>
+    <dt>Transcript</dt><dd>${escapeHtml(node.transcript || "not found")}</dd>
+    ${node.fork ? `<dt>Brief file</dt><dd>${escapeHtml(node.fork.briefPath)}</dd><dt>Result file</dt><dd>${escapeHtml(node.fork.resultPath)}</dd>` : ""}
+  </dl>
+  <div class="actions">
+    ${copyButton(`claude --resume ${node.id}`, "Copy resume command")}
+    ${node.transcript ? copyButton(node.transcript, "Copy transcript path") : ""}
+    ${node.fork && node.fork.result ? copyButton(node.fork.result, "Copy result") : ""}
+  </div>`);
+
+  panel.innerHTML = parts.join("\n");
+}
+
+document.getElementById("details").addEventListener("click", (event) => {
+  const copy = event.target.closest("[data-copy]");
+  if (copy) {
+    navigator.clipboard.writeText(copy.dataset.copy).then(() => {
+      const original = copy.textContent;
+      copy.textContent = "Copied";
+      setTimeout(() => (copy.textContent = original), 1200);
+    });
+  }
+  const select = event.target.closest("[data-select]");
+  if (select) {
+    event.preventDefault();
+    cy.$(":selected").unselect();
+    cy.getElementById(select.dataset.select).select();
+    showDetails(select.dataset.select);
+  }
+});
+
+cy.on("tap", "node", (event) => showDetails(event.target.id()));
+cy.on("dbltap", "node", (event) => {
+  if (descendants(event.target).length) {
+    event.target.toggleClass("folded");
+    applyFilters();
+  }
+});
+
+const projects = [...new Set(DATA.nodes.filter((node) => !parentOf.has(node.id)).map((node) => node.cwd || ""))].sort();
+const projectSelect = document.getElementById("project");
+projectSelect.innerHTML = `<option value="">All projects (${projects.length})</option>` +
+  projects.map((cwd) => `<option value="${escapeHtml(cwd)}">${escapeHtml(projectName(cwd))}</option>`).join("");
+for (const id of ["project", "state"]) document.getElementById(id).addEventListener("change", applyFilters);
+document.getElementById("search").addEventListener("input", applyFilters);
+document.getElementById("fit").addEventListener("click", () => cy.fit(cy.elements().not(".hidden"), 30));
+
+const forkCount = DATA.nodes.filter((node) => node.fork).length;
+document.getElementById("meta").textContent =
+  `${forkCount} fork${forkCount === 1 ? "" : "s"} · updated ${formatDate(DATA.generatedAt)}`;
+
+if (!DATA.nodes.length) {
+  document.getElementById("details").innerHTML = '<p class="placeholder">No forks yet. Run /session-tree:fork in a Claude Code session to create one.</p>';
+}
+applyFilters();
+</script>
+</body>
+</html>
