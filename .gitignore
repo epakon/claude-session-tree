@@ -1,0 +1,5 @@
+node_modules/
+spike/out/
+spike/run*.env
+spike/run*.stream.jsonl
+spike/run*.stderr
