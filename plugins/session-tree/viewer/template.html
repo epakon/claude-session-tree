@@ -352,6 +352,12 @@ if (!DATA.nodes.length) {
   document.getElementById("details").innerHTML = '<p class="placeholder">No forks yet. Run /session-tree:fork in a Claude Code session to create one.</p>';
 }
 applyFilters();
+
+const initial = new URLSearchParams(location.hash.slice(1)).get("select");
+if (initial && nodesById.has(initial)) {
+  cy.getElementById(initial).select();
+  showDetails(initial);
+}
 </script>
 </body>
 </html>

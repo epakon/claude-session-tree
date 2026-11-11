@@ -1,0 +1,14 @@
+{
+  "name": "claude-session-tree",
+  "owner": { "name": "konstantin.epanov" },
+  "description": "Session Tree plugin for Claude Code.",
+  "plugins": [
+    {
+      "name": "session-tree",
+      "source": "./plugins/session-tree",
+      "description": "Claude Code only. Fork a subtopic of a conversation into its own session that starts from a short brief, and get back only the result. A browser view shows the conversation tree.",
+      "version": "0.1.0",
+      "category": "productivity"
+    }
+  ]
+}
