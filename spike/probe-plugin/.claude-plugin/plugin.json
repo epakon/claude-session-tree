@@ -1,0 +1,6 @@
+{
+  "name": "st-probe",
+  "version": "0.0.1",
+  "description": "Spike probe for claude-session-tree: checks skill substitution, hooks and permissions.",
+  "author": { "name": "kepanov" }
+}

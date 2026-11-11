@@ -1,0 +1,26 @@
+{
+  "name": "claude-session-tree",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Claude Code plugin to fork a conversation into focused sessions and return only the result, with a tree viewer.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "cytoscape": "^3.34.4",
+    "cytoscape-dagre": "^4.0.1",
+    "dagre": "^0.8.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
