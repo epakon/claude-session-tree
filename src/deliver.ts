@@ -8,7 +8,7 @@ export interface Delivery {
 }
 
 const HEADER =
-  "Results returned from forked sessions (session-tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
+  "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
 
 export function waitingForks(registry: Registry, parentSessionId: string): ForkRecord[] {
   return registry
@@ -58,7 +58,7 @@ export function deliver(registry: Registry, parentSessionId: string, now: string
   if (!delivered.length) return { additionalContext: null, systemMessage: null, delivered, deferred };
   return {
     additionalContext: [HEADER, ...sections].join("\n\n"),
-    systemMessage: `session-tree: merged ${delivered.map((fork) => `${fork.label} "${fork.topic}"`).join(", ")}`,
+    systemMessage: `Session Tree: merged ${delivered.map((fork) => `${fork.label} "${fork.topic}"`).join(", ")}`,
     delivered,
     deferred,
   };

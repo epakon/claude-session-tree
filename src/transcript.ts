@@ -17,7 +17,7 @@ export interface Turn {
   text: string;
 }
 
-const OWN_COMMAND = /<command-name>\/?session-tree:/;
+const OWN_COMMAND = /<command-name>\/?tree:/;
 
 export function readRecords(path: string): TranscriptRecord[] {
   if (!existsSync(path)) return [];

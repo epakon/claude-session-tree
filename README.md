@@ -6,11 +6,21 @@ Split a complex conversation into focused forks. A fork is a new Claude Code ses
 
 ![Session tree viewer](docs/tree.png)
 
+### How it differs from the built-in commands
+
+Claude Code's own `/fork` and `/branch` copy the **whole** conversation into the new session, and nothing comes back. `/subtask` sends a result back, but its background subagent also inherits the full conversation and runs without you. `/tree:fork` and `/tree:return` keep both sides lean:
+- The fork starts from a short, scoped brief, not a copy of the conversation.
+- You work in the fork interactively.
+- Only the result returns to the main conversation.
+- The tree view shows how the conversations relate.
+
+The commands are namespaced (`/tree:fork`), so they can't be confused with the built-in `/fork`.
+
 ## Install
 
 ```sh
 claude plugin marketplace add /path/to/claude-session-tree
-claude plugin install session-tree@claude-session-tree
+claude plugin install tree@claude-session-tree
 ```
 
 Restart Claude Code afterwards so the plugin's hooks are active from the start of each session.
@@ -19,29 +29,29 @@ Restart Claude Code afterwards so the plugin's hooks are active from the start o
 
 | Command | Where | What it does |
 | :- | :- | :- |
-| `/session-tree:fork <topic>` | Main conversation | Writes a short brief and opens a new Terminal window with a fork session that starts from it. |
-| `/session-tree:fork go <label>` | Main conversation | Starts a fork drafted with `--review`. |
-| `/session-tree:return` | Fork | Writes the fork's result. The main conversation receives it with your next message there. |
-| `/session-tree:forks` | Anywhere | Lists the conversation's forks and whether each has returned. |
-| `/session-tree:forks pull <fork>` | Anywhere | Brings a returned result into the current conversation by hand, for example after `/clear` gave it a new session ID. |
-| `/session-tree:tree` | Anywhere | Opens the tree view in your browser. |
+| `/tree:fork <topic>` | Main conversation | Writes a short brief and opens a new Terminal window with a fork session that starts from it. |
+| `/tree:fork go <label>` | Main conversation | Starts a fork drafted with `--review`. |
+| `/tree:return` | Fork | Writes the fork's result. The main conversation receives it with your next message there. |
+| `/tree:forks` | Anywhere | Lists the conversation's forks and whether each has returned. |
+| `/tree:forks pull <fork>` | Anywhere | Brings a returned result into the current conversation by hand, for example after `/clear` gave it a new session ID. |
+| `/tree:view` | Anywhere | Opens the tree view in your browser. |
 
 ### Scoping a fork
 
-Options for `/session-tree:fork` can be combined, for example:
+Options for `/tree:fork` can be combined, for example:
 
 ```text
-/session-tree:fork "OAuth2 option" focus: token refresh; skip: UI --last 2 --review
+/tree:fork "OAuth2 option" focus: token refresh; skip: UI --last 2 --review
 ```
 
 - **`focus: ...; skip: ...`** tells Claude what to put in the brief and what to leave out.
 - **`--last N`** copies the last N exchanges of the conversation into the brief exactly as written. The script does this, so it costs no tokens in the main conversation.
-- **`--review`** opens the brief in your editor instead of starting the fork. Edit it, then run `/session-tree:fork go f1`. Your edits never enter the main conversation.
+- **`--review`** opens the brief in your editor instead of starting the fork. Edit it, then run `/tree:fork go f1`. Your edits never enter the main conversation.
 - **`--print`** prints the command that starts the fork instead of opening Terminal. Use it to run the fork in a VS Code or Cursor terminal, or on Linux and Windows, where this is the only mode.
 
 ### What comes back
 
-`/session-tree:return` makes Claude write a self-contained result: outcome, key decisions, artifacts and open questions, in under about 4,000 characters. The result reaches the main conversation automatically with your next message there, together with a one-line notice that the fork was merged. The fork's conversation itself never enters the main conversation.
+`/tree:return` makes Claude write a self-contained result: outcome, key decisions, artifacts and open questions, in under about 4,000 characters. The result reaches the main conversation automatically with your next message there, together with a one-line notice that the fork was merged. The fork's conversation itself never enters the main conversation.
 
 If several forks return at once, their results arrive oldest first. Anything over the size limit arrives with the following message, and a result that is too long is cut off with a pointer to the full file.
 
@@ -94,22 +104,22 @@ Create `~/.claude/session-tree/config.json` to change the defaults:
 
 ### Side effects
 
-- `/session-tree:fork` opens a macOS Terminal window through `osascript`, unless you pass `--print`.
+- `/tree:fork` opens a macOS Terminal window through `osascript`, unless you pass `--print`.
 - `--review` opens the brief in Cursor, VS Code or TextEdit.
-- `/session-tree:tree` opens `tree.html` in your default browser.
+- `/tree:view` opens `tree.html` in your default browser.
 - The plugin writes only under `~/.claude/session-tree/`. It reads Claude Code's session files under `~/.claude/projects/`. It makes no network requests.
 
 ## Develop
 
 ```sh
 npm install
-npm test               # builds plugins/session-tree from src/, then runs the unit tests
+npm test               # builds plugins/tree from src/, then runs the unit tests
 npm run typecheck
 sh scripts/e2e-claude.sh   # full cycle against real Claude Code (haiku, a few cents)
-claude --plugin-dir plugins/session-tree   # try the plugin without installing it
+claude --plugin-dir plugins/tree   # try the plugin without installing it
 ```
 
-- **Sources** are in `src/`. `npm run build` bundles them with esbuild into `plugins/session-tree/scripts/st.mjs`, which has no runtime dependencies. It also builds `plugins/session-tree/viewer/template.html`, with Cytoscape.js and its dagre layout inlined so the viewer works offline.
+- **Sources** are in `src/`. `npm run build` bundles them with esbuild into `plugins/tree/scripts/st.mjs`, which has no runtime dependencies. It also builds `plugins/tree/viewer/template.html`, with Cytoscape.js and its dagre layout inlined so the viewer works offline.
 - **Built files are committed**, so the plugin needs no build step after install.
 - **`SESSION_TREE_DIR`** overrides the registry location for tests.
 - **`SESSION_TREE_CLAUDE_ARGS`** adds arguments to the `claude` command that starts a fork, for example `--plugin-dir` while developing.

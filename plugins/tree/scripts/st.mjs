@@ -13,7 +13,7 @@ import { dirname as dirname2, join as join4 } from "node:path";
 import { parseArgs } from "node:util";
 
 // src/deliver.ts
-var HEADER = "Results returned from forked sessions (session-tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
+var HEADER = "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
 function waitingForks(registry, parentSessionId) {
   return registry.forksOfParent(parentSessionId).filter((fork) => fork.returnedAt && !fork.deliveredAt).sort((a, b) => a.returnedAt.localeCompare(b.returnedAt));
 }
@@ -54,7 +54,7 @@ function deliver(registry, parentSessionId, now) {
   if (!delivered.length) return { additionalContext: null, systemMessage: null, delivered, deferred };
   return {
     additionalContext: [HEADER, ...sections].join("\n\n"),
-    systemMessage: `session-tree: merged ${delivered.map((fork) => `${fork.label} "${fork.topic}"`).join(", ")}`,
+    systemMessage: `Session Tree: merged ${delivered.map((fork) => `${fork.label} "${fork.topic}"`).join(", ")}`,
     delivered,
     deferred
   };
@@ -277,7 +277,7 @@ var Registry = class {
 // src/transcript.ts
 import { existsSync as existsSync3, readdirSync as readdirSync2, readFileSync as readFileSync2 } from "node:fs";
 import { join as join3 } from "node:path";
-var OWN_COMMAND = /<command-name>\/?session-tree:/;
+var OWN_COMMAND = /<command-name>\/?tree:/;
 function readRecords(path) {
   if (!existsSync3(path)) return [];
   const records = [];
@@ -457,7 +457,7 @@ function renderViewer(template, data) {
 var UsageError = class extends Error {
 };
 var LAST_EXCHANGES_MAX_CHARS = 8e3;
-var PLUGIN = "session-tree";
+var PLUGIN = "tree";
 function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
@@ -599,7 +599,7 @@ function cmdHookSessionStart(ctx, registry) {
     ctx.refreshTree();
   }
   const context = [
-    `This session is fork ${fork.label} "${fork.topic}" of parent session ${fork.parentSessionId}, created by the ${PLUGIN} plugin. Fork ID: ${fork.forkId}.`,
+    `This session is fork ${fork.label} "${fork.topic}" of parent session ${fork.parentSessionId}, created by the Session Tree plugin. Fork ID: ${fork.forkId}.`,
     "The first user message is the brief from the parent. Work on this subtopic with the user.",
     `When the user runs /${PLUGIN}:return, write the result for the parent. Only that result goes back; the parent never sees this conversation.`
   ];

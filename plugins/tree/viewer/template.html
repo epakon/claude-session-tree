@@ -349,7 +349,7 @@ document.getElementById("meta").textContent =
   `${forkCount} fork${forkCount === 1 ? "" : "s"} · updated ${formatDate(DATA.generatedAt)}`;
 
 if (!DATA.nodes.length) {
-  document.getElementById("details").innerHTML = '<p class="placeholder">No forks yet. Run /session-tree:fork in a Claude Code session to create one.</p>';
+  document.getElementById("details").innerHTML = '<p class="placeholder">No forks yet. Run /tree:fork in a Claude Code session to create one.</p>';
 }
 applyFilters();
 

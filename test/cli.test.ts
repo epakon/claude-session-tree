@@ -76,7 +76,7 @@ describe("fork, return and delivery", () => {
     expect(h.registry.hasPending("parent")).toBe(true);
 
     const delivery = JSON.parse(hook(h, "hook-prompt", { session_id: "parent" }).stdout);
-    expect(delivery.systemMessage).toBe('session-tree: merged f1 "OAuth2 option"');
+    expect(delivery.systemMessage).toBe('Session Tree: merged f1 "OAuth2 option"');
     expect(delivery.hookSpecificOutput.additionalContext).toContain("Use OAuth2 with PKCE.");
     expect(hook(h, "hook-prompt", { session_id: "parent" }).stdout).toBe("");
   });
@@ -95,7 +95,7 @@ describe("fork, return and delivery", () => {
     const h = harness();
     h.stdin("Brief");
     const drafted = run(["fork", "--parent", "parent", "--topic", "Draft topic", "--review", "--scope", "focus: tokens"], h.ctx);
-    expect(drafted.stdout).toContain("run /session-tree:fork go f1");
+    expect(drafted.stdout).toContain("run /tree:fork go f1");
     expect(h.opened.editor).toHaveLength(1);
     expect(h.opened.terminal).toHaveLength(0);
     expect(h.registry.listForks()[0]!.scope).toBe("focus: tokens");
