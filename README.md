@@ -19,9 +19,11 @@ The commands are namespaced (`/tree:fork`), so they can't be confused with the b
 ## Install
 
 ```sh
-claude plugin marketplace add /path/to/claude-session-tree
+claude plugin marketplace add epakon/claude-session-tree
 claude plugin install tree@claude-session-tree
 ```
+
+To install from a local clone instead, pass its path to `claude plugin marketplace add`.
 
 Restart Claude Code afterwards so the plugin is active from the start of each session.
 

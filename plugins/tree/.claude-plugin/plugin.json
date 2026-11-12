@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "description": "Claude Code only. Fork a subtopic of a conversation into its own session that starts from a short brief, and get back only the result. A browser view shows the conversation tree.",
   "author": { "name": "konstantin.epanov" },
+  "homepage": "https://github.com/epakon/claude-session-tree",
+  "repository": "https://github.com/epakon/claude-session-tree",
   "license": "Apache-2.0",
   "keywords": ["sessions", "fork", "context", "tokens", "visualization"]
 }
