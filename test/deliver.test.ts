@@ -19,7 +19,7 @@ describe("deliver", () => {
     const first = deliver(registry, "parent-1", NOW);
     expect(first.delivered.map((f) => f.label)).toEqual(["f1", "f2"]);
     expect(first.additionalContext!.indexOf("result A")).toBeLessThan(first.additionalContext!.indexOf("result B"));
-    expect(first.systemMessage).toBe('session-tree: merged f1 "First", f2 "Second"');
+    expect(first.systemMessage).toBe('Session Tree: merged f1 "First", f2 "Second"');
     expect(registry.getFork("a")!.deliveredAt).toBe(NOW);
     expect(registry.hasPending("parent-1")).toBe(false);
 

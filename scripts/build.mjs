@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const plugin = join(root, "plugins", "session-tree");
+const plugin = join(root, "plugins", "tree");
 
 await build({
   entryPoints: [join(root, "src", "main.ts")],
@@ -31,4 +31,4 @@ if (!template.includes("<!-- VENDOR -->")) throw new Error("src/viewer/template.
 mkdirSync(join(plugin, "viewer"), { recursive: true });
 writeFileSync(join(plugin, "viewer", "template.html"), template.replace("<!-- VENDOR -->", () => vendor));
 
-console.log("built plugins/session-tree/scripts/st.mjs and plugins/session-tree/viewer/template.html");
+console.log("built plugins/tree/scripts/st.mjs and plugins/tree/viewer/template.html");

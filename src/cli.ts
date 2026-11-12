@@ -36,7 +36,7 @@ export interface Outcome {
 export class UsageError extends Error {}
 
 const LAST_EXCHANGES_MAX_CHARS = 8000;
-const PLUGIN = "session-tree";
+const PLUGIN = "tree";
 
 function sleep(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -187,7 +187,7 @@ function cmdHookSessionStart(ctx: Context, registry: Registry): Outcome {
     ctx.refreshTree();
   }
   const context = [
-    `This session is fork ${fork.label} "${fork.topic}" of parent session ${fork.parentSessionId}, created by the ${PLUGIN} plugin. Fork ID: ${fork.forkId}.`,
+    `This session is fork ${fork.label} "${fork.topic}" of parent session ${fork.parentSessionId}, created by the Session Tree plugin. Fork ID: ${fork.forkId}.`,
     "The first user message is the brief from the parent. Work on this subtopic with the user.",
     `When the user runs /${PLUGIN}:return, write the result for the parent. Only that result goes back; the parent never sees this conversation.`,
   ];

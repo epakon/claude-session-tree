@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { forkPoint, humanText, lastExchanges, readRecords, sessionTitle, turns } from "../src/transcript.js";
 import { assistant, tempDir, user, writeTranscript } from "./helpers.js";
 
-const forkCommand = user("<command-message>session-tree:fork</command-message>\n<command-name>/session-tree:fork</command-name>\n<command-args>OAuth2</command-args>");
+const forkCommand = user("<command-message>tree:fork</command-message>\n<command-name>/tree:fork</command-name>\n<command-args>OAuth2</command-args>");
 
 describe("humanText", () => {
   it("skips meta records, tool results and harness output", () => {
@@ -14,7 +14,7 @@ describe("humanText", () => {
   });
 
   it("renders slash commands as the typed command", () => {
-    expect(humanText(forkCommand as never)).toBe("/session-tree:fork OAuth2");
+    expect(humanText(forkCommand as never)).toBe("/tree:fork OAuth2");
   });
 });
 

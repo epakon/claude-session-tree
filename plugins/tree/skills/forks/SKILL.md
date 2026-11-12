@@ -6,7 +6,7 @@ disable-model-invocation: true
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs *)
 ---
 
-Output from the session-tree plugin:
+Output from the Session Tree plugin:
 
 !`node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs forks --session ${CLAUDE_SESSION_ID} $ARGUMENTS`
 
