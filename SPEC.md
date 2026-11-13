@@ -126,7 +126,7 @@ Keeping the brief in a file avoids quoting problems; quotes, `$`, backticks and 
 **UserPromptSubmit.** Delivery works like this:
 1. The fork records for this parent that have `returnedAt` but no `deliveredAt` are taken in order of `returnedAt`.
 2. Each result becomes a section `## Fork <label> "<topic>" returned`. A result longer than `resultCap` is cut off and followed by the full file's path.
-3. Sections are added under a fixed header until the next one would exceed `deliveryCap`. The first is always included. The rest are named in a closing line and stay pending.
+3. Sections are added under a fixed header, which also says that each result is complete and replaces an earlier result of the same fork, if one exists (a fork can return again; the registry doesn't track earlier returns). Sections are added until the next one would exceed `deliveryCap`. The first is always included. The rest are named in a closing line and stay pending.
 4. The output is `additionalContext` with the sections and `systemMessage` with `Session Tree: merged <label> "<topic>", ...`. Delivered forks get `deliveredAt`, and the pending marker is removed once nothing remains.
 
 Claude Code caps hook output at 10,000 characters; the default caps keep the total under that.

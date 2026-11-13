@@ -80,6 +80,8 @@ Options for `/tree:fork` can be combined, for example:
 
 If several forks return at once, their results arrive oldest first, and any that don't fit arrive with the following message. A result that is too long is cut off, with a pointer to the full text.
 
+A fork can return again after you continue working in it. The new result is complete, and Claude is told that it replaces any earlier result of the same fork.
+
 ### The tree view
 
 `/tree:view` opens the tree in your browser.
