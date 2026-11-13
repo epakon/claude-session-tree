@@ -23,6 +23,8 @@ describe("deliver", () => {
     expect(registry.getFork("a")!.deliveredAt).toBe(NOW);
     expect(registry.hasPending("parent-1")).toBe(false);
 
+    expect(first.additionalContext).toContain("replaces the earlier result, if one exists");
+
     const second = deliver(registry, "parent-1", NOW);
     expect(second.additionalContext).toBeNull();
   });

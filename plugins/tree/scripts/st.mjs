@@ -13,7 +13,7 @@ import { dirname as dirname2, join as join4 } from "node:path";
 import { parseArgs } from "node:util";
 
 // src/deliver.ts
-var HEADER = "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
+var HEADER = "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic. Each result is complete; if it is for a fork whose result you already received, it replaces the earlier result, if one exists.";
 function waitingForks(registry, parentSessionId) {
   return registry.forksOfParent(parentSessionId).filter((fork) => fork.returnedAt && !fork.deliveredAt).sort((a, b) => a.returnedAt.localeCompare(b.returnedAt));
 }

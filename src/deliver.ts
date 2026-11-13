@@ -8,7 +8,7 @@ export interface Delivery {
 }
 
 const HEADER =
-  "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic.";
+  "Results returned from forked sessions (Session Tree plugin). Each fork worked on a subtopic of this conversation; treat its result as the outcome of that subtopic. Each result is complete; if it is for a fork whose result you already received, it replaces the earlier result, if one exists.";
 
 export function waitingForks(registry: Registry, parentSessionId: string): ForkRecord[] {
   return registry
