@@ -180,6 +180,7 @@ claude plugin validate plugins/tree --strict
 claude plugin validate plugins/tree --profile directory
 ```
 
+- **Releases:** `plugins/tree/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` both set `version`. Claude Code uses it to detect updates, so raise it in both files with every release that users should receive.
 - **Sources** are in `src/`: `paths`, `fsutil`, `registry`, `transcript`, `deliver`, `tree`, `launch`, `viewer`, `cli` and `main`. Tests are in `test/`.
 - **Built files** in `plugins/tree/` are committed, so the plugin needs no build step after install. Rebuild with `npm run build` after changing `src/`.
 - **`scripts/e2e-claude.sh`** uses a temporary registry. It runs a parent session, `/tree:fork --last 1 --print`, the fork session, `/tree:return`, and a parent prompt that must answer from the delivered result.
