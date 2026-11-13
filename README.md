@@ -27,6 +27,19 @@ To install from a local clone instead, pass its path to `claude plugin marketpla
 
 Restart Claude Code afterwards so the plugin is active from the start of each session.
 
+### Update
+
+`marketplace add` doesn't update a marketplace you've already added, and it fails if the marketplace was added from a different source. To update an installed plugin, use these commands instead:
+
+```sh
+claude plugin marketplace update claude-session-tree
+claude plugin update tree@claude-session-tree
+```
+
+Then restart Claude Code, or run `/reload-plugins` in a running session.
+
+If you installed from a local clone, run `git pull` in it. Claude Code reads the plugin straight from the clone's folder, so `claude plugin update` says there is nothing to update; restart Claude Code or run `/reload-plugins` to load the new files.
+
 ## Use
 
 Each command is a skill in [`plugins/tree/skills/`](plugins/tree/skills). The commands are namespaced, so `fork` becomes `/tree:fork`. You start them yourself; Claude never runs them on its own.
