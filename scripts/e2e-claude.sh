@@ -34,7 +34,7 @@ step "parent receives the result with its next prompt"
 claude_p --resume "$parent" "In one sentence: what did the Config validation fork conclude? If you have no fork result in context, reply exactly: NO RESULT"
 
 step "registry state"
-node "$repo/plugins/tree/scripts/st.mjs" forks --session "$parent"
+node "$repo/plugins/tree/scripts/st.mjs" list --session "$parent"
 node "$repo/plugins/tree/scripts/st.mjs" tree
 fork_json=$(ls "$SESSION_TREE_DIR"/forks/*.json)
 grep -q '"deliveredAt": "20' "$fork_json" && echo "PASS: result delivered to the parent" || { echo "FAIL: result not delivered"; exit 1; }

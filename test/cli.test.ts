@@ -145,7 +145,7 @@ describe("fork, return and delivery", () => {
   });
 });
 
-describe("forks", () => {
+describe("list", () => {
   it("lists forks, offers orphaned results and pulls them by hand", () => {
     const h = harness();
     hook(h, "hook-session-start", { session_id: "old-parent", cwd: "/work/app", source: "startup" });
@@ -156,11 +156,11 @@ describe("forks", () => {
     h.stdin("The answer");
     run(["return", "--session", fork.childSessionId], h.ctx);
 
-    const listing = run(["forks", "--session", "new-parent"], h.ctx).stdout;
+    const listing = run(["list", "--session", "new-parent"], h.ctx).stdout;
     expect(listing).toContain("This session has no forks.");
     expect(listing).toContain(`f1  returned, waiting for delivery  "Lost result"  (fork ID ${fork.forkId})`);
 
-    const pulled = run(["forks", "--session", "new-parent", "pull", fork.forkId], h.ctx).stdout;
+    const pulled = run(["list", "--session", "new-parent", "pull", fork.forkId], h.ctx).stdout;
     expect(pulled).toContain("The answer");
     expect(h.registry.getFork(fork.forkId)!.deliveredAt).not.toBeNull();
   });

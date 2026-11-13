@@ -1,5 +1,5 @@
 ---
-name: forks
+name: list
 description: List this conversation's forks and whether each has returned, or bring a returned result here by hand with "pull <fork>".
 argument-hint: "[pull <label|fork ID>]"
 disable-model-invocation: true
@@ -8,7 +8,7 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs *)
 
 Output from the Session Tree plugin:
 
-!`node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs forks --session ${CLAUDE_SESSION_ID} $ARGUMENTS`
+!`node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs list --session ${CLAUDE_SESSION_ID} $ARGUMENTS`
 
 If the output above is a list of forks, show it to the user exactly as it is, with nothing added.
 

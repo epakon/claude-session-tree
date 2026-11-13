@@ -88,7 +88,7 @@ export function buildTree(registry: Registry, projectsRoot: string, now: string)
       resultPath: registry.resultPath(fork.forkId),
     };
     if (child.title === fork.childSessionId.slice(0, 8)) child.title = fork.topic;
-    edges.push({ id: `fork-${fork.forkId}`, source: fork.parentSessionId, target: fork.childSessionId, kind: "fork", label: fork.label });
+    edges.push({ id: `fork-${fork.forkId}`, source: fork.parentSessionId, target: fork.childSessionId, kind: "fork", label: forkState(fork) === "draft" ? "draft" : "create" });
     if (fork.returnedAt) {
       edges.push({ id: `return-${fork.forkId}`, source: fork.childSessionId, target: fork.parentSessionId, kind: "return", label: "result" });
     }
