@@ -437,7 +437,7 @@ function buildTree(registry, projectsRoot, now) {
       resultPath: registry.resultPath(fork.forkId)
     };
     if (child.title === fork.childSessionId.slice(0, 8)) child.title = fork.topic;
-    edges.push({ id: `fork-${fork.forkId}`, source: fork.parentSessionId, target: fork.childSessionId, kind: "fork", label: fork.label });
+    edges.push({ id: `fork-${fork.forkId}`, source: fork.parentSessionId, target: fork.childSessionId, kind: "fork", label: forkState(fork) === "draft" ? "draft" : "create" });
     if (fork.returnedAt) {
       edges.push({ id: `return-${fork.forkId}`, source: fork.childSessionId, target: fork.parentSessionId, kind: "return", label: "result" });
     }
@@ -581,7 +581,7 @@ function cmdReturn(ctx, registry, argv) {
   const { resultCap } = registry.config();
   const note = result.length > resultCap ? ` The parent receives the first ${resultCap} characters and a pointer to the full file.` : "";
   return {
-    stdout: `Result for fork ${fork.label} "${fork.topic}" saved (${result.length} characters). It will reach the parent with your next message there.${note}`,
+    stdout: `Result for fork ${fork.label} "${fork.topic}" saved (${result.length} characters). It will reach the parent with your next message there.${note} This session is finished: type /exit to end it, then close the window if you like.`,
     code: 0
   };
 }
@@ -628,12 +628,12 @@ function describe(fork) {
   const status = state === "draft" ? "draft, not started" : state === "not-returned" ? "not returned" : fork.deliveredAt ? "returned, delivered" : "returned, waiting for delivery";
   return `${fork.label}  ${status}  "${fork.topic}"  (fork ID ${fork.forkId})`;
 }
-function cmdForks(ctx, registry, argv) {
+function cmdList(ctx, registry, argv) {
   const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { session: { type: "string" } } });
   const sessionId = required(values.session, "session");
   if (positionals[0] === "pull") {
     const ref = positionals[1];
-    if (!ref) throw new UsageError("usage: forks pull <label|forkId> --session <session>");
+    if (!ref) throw new UsageError("usage: list pull <label|forkId> --session <session>");
     const fork = registry.resolveFork(ref, sessionId);
     if (!fork) return { stdout: `No fork "${ref}" found.`, code: 0 };
     if (!fork.returnedAt) return { stdout: `Fork ${fork.label} "${fork.topic}" has not returned yet.`, code: 0 };
@@ -648,7 +648,7 @@ function cmdForks(ctx, registry, argv) {
   if (orphans.length) {
     lines.push(
       "",
-      `Returned but undelivered results from other sessions in this project (bring one here with /${PLUGIN}:forks pull <fork ID>):`,
+      `Returned but undelivered results from other sessions in this project (bring one here with /${PLUGIN}:list pull <fork ID>):`,
       ...orphans.map(describe)
     );
   }
@@ -677,12 +677,12 @@ function run(argv, ctx) {
         return cmdHookSessionStart(ctx, registry);
       case "hook-prompt":
         return cmdHookPrompt(ctx, registry);
-      case "forks":
-        return cmdForks(ctx, registry, rest);
+      case "list":
+        return cmdList(ctx, registry, rest);
       case "tree":
         return cmdTree(ctx, registry, rest);
       default:
-        throw new UsageError("usage: st.mjs <fork|go|return|forks|tree|hook-session-start|hook-prompt> [options]");
+        throw new UsageError("usage: st.mjs <fork|go|return|list|tree|hook-session-start|hook-prompt> [options]");
     }
   } catch (error) {
     if (error instanceof UsageError || error.code?.startsWith("ERR_PARSE_ARGS")) {

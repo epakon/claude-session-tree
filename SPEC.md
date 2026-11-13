@@ -8,7 +8,7 @@ This describes how the `tree` plugin works, its data formats, and how to develop
 | :- | :- | :- |
 | Plugin manifest | `plugins/tree/.claude-plugin/plugin.json` | Plugin name `tree`, display name "Session Tree". |
 | Marketplace | `.claude-plugin/marketplace.json` | A single-plugin marketplace named `claude-session-tree`. |
-| Skills | `plugins/tree/skills/{fork,return,forks,view}/SKILL.md` | The four commands. All set `disable-model-invocation: true` and `allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs *)`. |
+| Skills | `plugins/tree/skills/{fork,return,list,view}/SKILL.md` | The four commands. All set `disable-model-invocation: true` and `allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs *)`. |
 | Hooks | `plugins/tree/hooks/hooks.json` | `SessionStart` runs `st.mjs hook-session-start`. `UserPromptSubmit` runs `prompt-check.sh`. Both time out after 10 seconds. |
 | Prompt fast path | `plugins/tree/hooks/prompt-check.sh` | Exits at once unless `pending/<session_id>` exists; only then starts Node. |
 | CLI | `plugins/tree/scripts/st.mjs` | Bundled from `src/` by esbuild, with no runtime dependencies. |
@@ -38,7 +38,7 @@ The registry lives in `$SESSION_TREE_DIR`, defaulting to `${CLAUDE_CONFIG_DIR:-~
 
 | Path | Written by | Content |
 | :- | :- | :- |
-| `forks/<forkId>.json` | `fork`, the hooks, `return`, `forks pull` | The fork record (below). |
+| `forks/<forkId>.json` | `fork`, the hooks, `return`, `list pull` | The fork record (below). |
 | `briefs/<forkId>.md` | `fork` | The fork's first prompt. |
 | `results/<forkId>.md` | `return` | The full result. |
 | `sessions/<sessionId>.json` | `SessionStart` hook | `sessionId`, `transcriptPath`, `cwd`, `lastSource`, `firstSeenAt`, `lastSeenAt`. |
@@ -96,8 +96,8 @@ Exit codes: 0 for success, 1 when a fork or session isn't found, 2 for usage err
 | `fork --parent <session> --topic <t> [--scope <s>] [--last N] [--review] [--print]` | Brief on stdin | Creates the fork record, the brief and the launch script, then launches the fork; or, with `--review`, opens the brief in an editor and doesn't launch. |
 | `go <label\|forkId> --parent <session> [--print]` | | Launches a draft. Reports the resume command if the fork already started. |
 | `return --session <session> [--fork <forkId>]` | Result on stdin | Finds the fork by child session ID (or by `--fork`), writes the result, sets `returnedAt`, clears `deliveredAt`, and creates the pending marker. |
-| `forks --session <session>` | | Lists the session's forks. Also lists returned, undelivered results of other sessions with the same `cwd`. |
-| `forks --session <session> pull <label\|forkId>` | | Prints the result in the delivery format and sets `deliveredAt`. |
+| `list --session <session>` | | Lists the session's forks. Also lists returned, undelivered results of other sessions with the same `cwd`. |
+| `list --session <session> pull <label\|forkId>` | | Prints the result in the delivery format and sets `deliveredAt`. |
 | `tree [--open] [--quiet]` | | Builds `tree.html`, optionally opens it, and prints its path unless `--quiet`. |
 | `hook-session-start` | Hook JSON on stdin | Records the session. For a fork session, sets `launchedAt` and `childTranscript` and returns fork context. |
 | `hook-prompt` | Hook JSON on stdin | Delivers waiting results (below). |
@@ -163,7 +163,7 @@ Environment variables:
 
 ## Edge cases
 
-- **The parent's session ID changes** (after `/clear`, or a resume with `--fork-session`). Results addressed to the old ID aren't delivered automatically. `/tree:forks` in the new session lists them, since they share the `cwd`, and `/tree:forks pull` brings one in.
+- **The parent's session ID changes** (after `/clear`, or a resume with `--fork-session`). Results addressed to the old ID aren't delivered automatically. `/tree:list` in the new session lists them, since they share the `cwd`, and `/tree:list pull` brings one in.
 - **The fork's session ID changes** (after `/clear` in the fork). `return` can't find the fork by session ID. The `SessionStart` context gave Claude the fork ID, so the skill retries with `--fork <forkId>`.
 - **The fork point is slightly stale.** Transcripts are written asynchronously, so `forkPointUuid` can miss the very latest message.
 - **Concurrent writes.** Atomic renames and the `deliveredAt` check keep a return that arrives during delivery safe.

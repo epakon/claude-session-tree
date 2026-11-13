@@ -167,7 +167,7 @@ function cmdReturn(ctx: Context, registry: Registry, argv: string[]): Outcome {
   const { resultCap } = registry.config();
   const note = result.length > resultCap ? ` The parent receives the first ${resultCap} characters and a pointer to the full file.` : "";
   return {
-    stdout: `Result for fork ${fork.label} "${fork.topic}" saved (${result.length} characters). It will reach the parent with your next message there.${note}`,
+    stdout: `Result for fork ${fork.label} "${fork.topic}" saved (${result.length} characters). It will reach the parent with your next message there.${note} This session is finished: type /exit to end it, then close the window if you like.`,
     code: 0,
   };
 }
@@ -220,13 +220,13 @@ function describe(fork: ForkRecord): string {
   return `${fork.label}  ${status}  "${fork.topic}"  (fork ID ${fork.forkId})`;
 }
 
-function cmdForks(ctx: Context, registry: Registry, argv: string[]): Outcome {
+function cmdList(ctx: Context, registry: Registry, argv: string[]): Outcome {
   const { values, positionals } = parseArgs({ args: argv, allowPositionals: true, options: { session: { type: "string" } } });
   const sessionId = required(values.session, "session");
 
   if (positionals[0] === "pull") {
     const ref = positionals[1];
-    if (!ref) throw new UsageError("usage: forks pull <label|forkId> --session <session>");
+    if (!ref) throw new UsageError("usage: list pull <label|forkId> --session <session>");
     const fork = registry.resolveFork(ref, sessionId);
     if (!fork) return { stdout: `No fork "${ref}" found.`, code: 0 };
     if (!fork.returnedAt) return { stdout: `Fork ${fork.label} "${fork.topic}" has not returned yet.`, code: 0 };
@@ -243,7 +243,7 @@ function cmdForks(ctx: Context, registry: Registry, argv: string[]): Outcome {
   if (orphans.length) {
     lines.push(
       "",
-      `Returned but undelivered results from other sessions in this project (bring one here with /${PLUGIN}:forks pull <fork ID>):`,
+      `Returned but undelivered results from other sessions in this project (bring one here with /${PLUGIN}:list pull <fork ID>):`,
       ...orphans.map(describe),
     );
   }
@@ -274,12 +274,12 @@ export function run(argv: string[], ctx: Context): Outcome {
         return cmdHookSessionStart(ctx, registry);
       case "hook-prompt":
         return cmdHookPrompt(ctx, registry);
-      case "forks":
-        return cmdForks(ctx, registry, rest);
+      case "list":
+        return cmdList(ctx, registry, rest);
       case "tree":
         return cmdTree(ctx, registry, rest);
       default:
-        throw new UsageError("usage: st.mjs <fork|go|return|forks|tree|hook-session-start|hook-prompt> [options]");
+        throw new UsageError("usage: st.mjs <fork|go|return|list|tree|hook-session-start|hook-prompt> [options]");
     }
   } catch (error) {
     if (error instanceof UsageError || (error as { code?: string }).code?.startsWith("ERR_PARSE_ARGS")) {

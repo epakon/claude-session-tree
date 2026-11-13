@@ -29,19 +29,21 @@ Restart Claude Code afterwards so the plugin is active from the start of each se
 
 ## Use
 
-| Command | Where | What it does |
+Each command is a skill in [`plugins/tree/skills/`](plugins/tree/skills). The commands are namespaced, so `fork` becomes `/tree:fork`. You start them yourself; Claude never runs them on its own.
+
+| Command | Run it in | What to expect |
 | :- | :- | :- |
-| `/tree:fork <topic>` | Main conversation | Writes a short brief and opens a new Terminal window with a fork session that starts from it. |
-| `/tree:fork go <label>` | Main conversation | Starts a fork drafted with `--review`. |
-| `/tree:return` | Fork | Writes the fork's result. The main conversation receives it with your next message there. |
-| `/tree:forks` | Anywhere | Lists the conversation's forks and whether each has returned. |
-| `/tree:forks pull <fork>` | Anywhere | Brings a returned result into the current conversation by hand, for example after `/clear` started a new session. |
-| `/tree:view` | Anywhere | Opens the tree view in your browser. |
+| [`/tree:fork <topic>`](plugins/tree/skills/fork/SKILL.md) | The main conversation | Claude writes a short brief (under 300 words: goal, context, constraints, expected result) and a new Terminal window opens with a fork session that starts from it. You can add `focus: ...; skip: ...`, `--last N`, `--review` and `--print`. Only the brief's text is produced in the main conversation, never the fork's work. |
+| [`/tree:fork go <label>`](plugins/tree/skills/fork/SKILL.md) | The main conversation | Starts a fork you drafted with `--review`, after you edited its brief. |
+| [`/tree:return`](plugins/tree/skills/return/SKILL.md) | The fork | Claude writes a self-contained result (outcome, key decisions, artifacts, open questions; under about 4,000 characters) and saves it. The main conversation receives it with your next message there. Afterwards, type `/exit` to end the fork session. |
+| [`/tree:list`](plugins/tree/skills/list/SKILL.md) | Anywhere | Shows the conversation's forks and whether each has returned. |
+| `/tree:list pull <fork>` | Anywhere | Brings a returned result into the current conversation by hand, for example after `/clear` started a new session. |
+| [`/tree:view`](plugins/tree/skills/view/SKILL.md) | Anywhere | Opens the tree of conversations and forks in your browser. Nothing is added to the conversation. |
 
 A typical round:
 1. In the main conversation, run `/tree:fork "OAuth2 option"`. A new Terminal window opens with the fork, which already knows the goal and the relevant context.
 2. Work on the subtopic in the fork as in any Claude Code session.
-3. When you're done, run `/tree:return` in the fork.
+3. When you're done, run `/tree:return` in the fork, then type `/exit` to end the fork session. Its Terminal window stays open until you close it.
 4. Go back to the main conversation and carry on. With your next message, Claude receives the fork's result, and you see a short notice that the fork was merged.
 
 Forks can fork again; the tree view shows every level.
@@ -68,7 +70,7 @@ If several forks return at once, their results arrive oldest first, and any that
 ### The tree view
 
 `/tree:view` opens the tree in your browser.
-- **Reading it:** the main conversation is blue. Returned forks are green, forks that haven't returned are grey, and drafts that haven't started have a dashed outline. A dashed green line shows a result that went back.
+- **Reading it:** the main conversation is blue. Returned forks are green, forks that haven't returned are grey, and drafts that haven't started have a dashed outline. Arrows are labelled with what happened: `create` (a fork was started), `draft` (a fork is drafted but not started) and `result` (a dashed green arrow back to the parent, showing the result went back). The fork's label, such as `f1`, is in the details panel.
 - **Details:** click a box to see its brief, its result and when it happened.
 - **Navigating:** double-click a box to fold its branch. Filter by project or status, or search topics and results.
 - **Updates:** the page updates after every fork and return; reload it to see the latest state.

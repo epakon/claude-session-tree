@@ -190,14 +190,14 @@ const projectName = (cwd) => (cwd ? cwd.split("/").filter(Boolean).pop() : "Unkn
 
 function displayLabel(node) {
   if (!node.fork) return node.title;
-  return `${node.fork.topic}\n${node.fork.label} · ${STATE_TEXT[node.fork.state].toLowerCase()}`;
+  return node.fork.topic;
 }
 
 const elements = [
   ...DATA.nodes.map((node) => ({
     data: { id: node.id, label: displayLabel(node), kind: node.fork ? "fork" : "root", state: node.fork ? node.fork.state : "root", project: nodesById.get(rootOf(node.id)).cwd || "" },
   })),
-  ...DATA.edges.map((edge) => ({ data: { id: edge.id, source: edge.source, target: edge.target, kind: edge.kind, label: edge.kind === "fork" ? edge.label : "" } })),
+  ...DATA.edges.map((edge) => ({ data: { id: edge.id, source: edge.source, target: edge.target, kind: edge.kind, label: edge.label } })),
 ];
 
 const cy = cytoscape({
@@ -222,8 +222,7 @@ const cy = cytoscape({
       label: "data(label)", "font-size": 10, color: css("--muted"), "text-background-color": css("--bg"), "text-background-opacity": 1, "text-background-padding": 2,
     } },
     { selector: 'edge[kind="return"]', style: {
-      "line-style": "dashed", "line-color": css("--returned"), "target-arrow-color": css("--returned"), "curve-style": "unbundled-bezier",
-      "control-point-distances": [-60], "control-point-weights": [0.5],
+      "line-style": "dashed", "line-color": css("--returned"), "target-arrow-color": css("--returned"), "curve-style": "bezier", "control-point-step-size": 50,
     } },
     { selector: ".hidden", style: { display: "none" } },
     { selector: ".dimmed", style: { opacity: 0.25 } },
