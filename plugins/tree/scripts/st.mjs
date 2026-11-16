@@ -87,6 +87,31 @@ function removeFile(path) {
 
 // src/launch.ts
 import { execFileSync, spawn } from "node:child_process";
+
+// src/paths.ts
+import { homedir } from "node:os";
+import { join } from "node:path";
+function readEnv() {
+  return {
+    CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
+    SESSION_TREE_DIR: process.env.SESSION_TREE_DIR,
+    SESSION_TREE_CLAUDE_ARGS: process.env.SESSION_TREE_CLAUDE_ARGS,
+    TERM_PROGRAM: process.env.TERM_PROGRAM,
+    CURSOR_TRACE_ID: process.env.CURSOR_TRACE_ID,
+    VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE
+  };
+}
+function configDir(env = readEnv()) {
+  return env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
+}
+function registryDir(env = readEnv()) {
+  return env.SESSION_TREE_DIR || join(configDir(env), "session-tree");
+}
+function projectsDir(env = readEnv()) {
+  return join(configDir(env), "projects");
+}
+
+// src/launch.ts
 function shellQuote(value) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
@@ -134,7 +159,7 @@ function onPath(command) {
     return false;
   }
 }
-function openEditor(path, env = process.env) {
+function openEditor(path, env = readEnv()) {
   if (env.TERM_PROGRAM === "vscode") {
     const preferred = env.CURSOR_TRACE_ID || /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "") ? ["cursor", "code"] : ["code", "cursor"];
     for (const editor of preferred) {
@@ -148,19 +173,6 @@ function openFile(path) {
   if (process.platform === "darwin") return detached("open", [path]);
   if (process.platform === "win32") return detached("cmd", ["/c", "start", "", path]);
   return detached("xdg-open", [path]);
-}
-
-// src/paths.ts
-import { homedir } from "node:os";
-import { join } from "node:path";
-function configDir(env = process.env) {
-  return env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
-}
-function registryDir(env = process.env) {
-  return env.SESSION_TREE_DIR || join(configDir(env), "session-tree");
-}
-function projectsDir(env = process.env) {
-  return join(configDir(env), "projects");
 }
 
 // src/registry.ts
@@ -693,20 +705,20 @@ function run(argv, ctx) {
 }
 function defaultContext(scriptPath2) {
   return {
-    env: process.env,
+    env: readEnv(),
     cwd: process.cwd(),
     now: () => (/* @__PURE__ */ new Date()).toISOString(),
     readStdin: () => process.stdin.isTTY ? "" : readFileSync3(0, "utf8"),
     scriptPath: scriptPath2,
     platform: process.platform,
     refreshTree: () => {
-      const child = spawn2(process.execPath, [scriptPath2, "tree", "--quiet"], { detached: true, stdio: "ignore", env: process.env });
+      const child = spawn2(process.execPath, [scriptPath2, "tree", "--quiet"], { detached: true, stdio: "ignore" });
       child.on("error", () => {
       });
       child.unref();
     },
     openTerminal,
-    openEditor: (path) => openEditor(path, process.env),
+    openEditor: (path) => openEditor(path),
     openFile
   };
 }

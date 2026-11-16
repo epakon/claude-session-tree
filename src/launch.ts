@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import type { Env } from "./paths.js";
+import { readEnv, type Env } from "./paths.js";
 
 export function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
@@ -55,7 +55,7 @@ function onPath(command: string): boolean {
 }
 
 /** Opens a file for editing: in Cursor or VS Code when running inside their terminal, otherwise in the default text editor. */
-export function openEditor(path: string, env: Env = process.env): boolean {
+export function openEditor(path: string, env: Env = readEnv()): boolean {
   if (env.TERM_PROGRAM === "vscode") {
     const preferred = env.CURSOR_TRACE_ID || /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "") ? ["cursor", "code"] : ["code", "cursor"];
     for (const editor of preferred) {

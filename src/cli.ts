@@ -6,7 +6,7 @@ import { parseArgs } from "node:util";
 import { deliver, renderResult } from "./deliver.js";
 import { atomicWrite } from "./fsutil.js";
 import { launchScript, openEditor, openFile, openTerminal } from "./launch.js";
-import { projectsDir, registryDir, type Env } from "./paths.js";
+import { projectsDir, readEnv, registryDir, type Env } from "./paths.js";
 import { Registry, type ForkRecord } from "./registry.js";
 import { findTranscript, forkPoint, lastExchanges, readRecords } from "./transcript.js";
 import { buildTree, forkState } from "./tree.js";
@@ -291,19 +291,19 @@ export function run(argv: string[], ctx: Context): Outcome {
 
 export function defaultContext(scriptPath: string): Context {
   return {
-    env: process.env,
+    env: readEnv(),
     cwd: process.cwd(),
     now: () => new Date().toISOString(),
     readStdin: () => (process.stdin.isTTY ? "" : readFileSync(0, "utf8")),
     scriptPath,
     platform: process.platform,
     refreshTree: () => {
-      const child = spawn(process.execPath, [scriptPath, "tree", "--quiet"], { detached: true, stdio: "ignore", env: process.env });
+      const child = spawn(process.execPath, [scriptPath, "tree", "--quiet"], { detached: true, stdio: "ignore" });
       child.on("error", () => {});
       child.unref();
     },
     openTerminal,
-    openEditor: (path) => openEditor(path, process.env),
+    openEditor: (path) => openEditor(path),
     openFile,
   };
 }

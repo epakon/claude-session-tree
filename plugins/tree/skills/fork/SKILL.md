@@ -1,7 +1,7 @@
 ---
 name: fork
 description: Fork a subtopic of this conversation into a new interactive Claude Code session that starts from a short brief. Only the fork's result comes back here.
-argument-hint: <topic> [focus: ...; skip: ...] [--last N] [--review] [--print] | go <label>
+argument-hint: "<topic> [focus: ...; skip: ...] [--last N] [--review] [--print] | go <label>"
 disable-model-invocation: true
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/st.mjs *)
 ---
