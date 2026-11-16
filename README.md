@@ -115,4 +115,5 @@ Optionally, create `~/.claude/session-tree/config.json`:
 ## More
 
 - [SPEC.md](SPEC.md): how it works, data formats, and development.
+- [PRIVACY.md](PRIVACY.md): what the plugin reads and stores, and what it sends (nothing).
 - [LICENSE](LICENSE): Apache-2.0.

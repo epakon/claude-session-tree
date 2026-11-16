@@ -32,4 +32,4 @@ Restart Claude Code afterwards.
 - **Network:** none. Nothing leaves your machine, and the tree page loads no external resources.
 - **What it adds to a conversation:** a fork result is added to the parent conversation as context with your next message there, and a short notice tells you so.
 
-The full usage guide, the data formats and the source are at https://github.com/epakon/claude-session-tree. The license is Apache-2.0.
+The full usage guide, the data formats and the source are at https://github.com/epakon/claude-session-tree. The license is Apache-2.0. [Privacy](https://github.com/epakon/claude-session-tree/blob/main/PRIVACY.md): everything stays on your computer, and deleting `~/.claude/session-tree/` removes it.
