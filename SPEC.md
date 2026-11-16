@@ -115,7 +115,7 @@ cd '<cwd>' || exit 1
 exec claude [$SESSION_TREE_CLAUDE_ARGS] --session-id '<childSessionId>' "$(cat '<brief path>')"
 ```
 
-Keeping the brief in a file avoids quoting problems; quotes, `$`, backticks and backslashes all arrive intact. On macOS, unless `--print` is passed or `terminal` is `"print"`, the script is opened in Terminal with `osascript`; on any other platform or failure, the command is printed instead. `--review` opens the brief with `cursor` or `code` when `TERM_PROGRAM` is `vscode`, and with `open -t` otherwise.
+Keeping the brief in a file avoids quoting problems; quotes, `$`, backticks and backslashes all arrive intact. On macOS, unless `--print` is passed or `terminal` is `"print"`, the script is opened in Terminal with `osascript`; on any other platform or failure, the command is printed instead. `--review` opens the brief with `cursor` or `code` when `TERM_PROGRAM` is `vscode` (Cursor is recognised by the word "cursor" in `VSCODE_GIT_ASKPASS_NODE`, the path of the editor's own git helper), and with `open -t` otherwise.
 
 ### Hooks
 

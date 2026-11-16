@@ -97,7 +97,6 @@ function readEnv() {
     SESSION_TREE_DIR: process.env.SESSION_TREE_DIR,
     SESSION_TREE_CLAUDE_ARGS: process.env.SESSION_TREE_CLAUDE_ARGS,
     TERM_PROGRAM: process.env.TERM_PROGRAM,
-    CURSOR_TRACE_ID: process.env.CURSOR_TRACE_ID,
     VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE
   };
 }
@@ -159,9 +158,12 @@ function onPath(command) {
     return false;
   }
 }
+function insideCursor(env) {
+  return /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "");
+}
 function openEditor(path, env = readEnv()) {
   if (env.TERM_PROGRAM === "vscode") {
-    const preferred = env.CURSOR_TRACE_ID || /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "") ? ["cursor", "code"] : ["code", "cursor"];
+    const preferred = insideCursor(env) ? ["cursor", "code"] : ["code", "cursor"];
     for (const editor of preferred) {
       if (onPath(editor) && detached(editor, [path])) return true;
     }

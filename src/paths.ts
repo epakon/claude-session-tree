@@ -10,7 +10,6 @@ export function readEnv(): Env {
     SESSION_TREE_DIR: process.env.SESSION_TREE_DIR,
     SESSION_TREE_CLAUDE_ARGS: process.env.SESSION_TREE_CLAUDE_ARGS,
     TERM_PROGRAM: process.env.TERM_PROGRAM,
-    CURSOR_TRACE_ID: process.env.CURSOR_TRACE_ID,
     VSCODE_GIT_ASKPASS_NODE: process.env.VSCODE_GIT_ASKPASS_NODE,
   };
 }

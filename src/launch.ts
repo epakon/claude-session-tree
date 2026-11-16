@@ -54,10 +54,18 @@ function onPath(command: string): boolean {
   }
 }
 
+/**
+ * Cursor and VS Code both set TERM_PROGRAM=vscode. The editor's git helper variable points into the app's own folder
+ * (for example .../Cursor.app/...), which tells them apart. It is only read to see whether the path says Cursor.
+ */
+export function insideCursor(env: Env): boolean {
+  return /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "");
+}
+
 /** Opens a file for editing: in Cursor or VS Code when running inside their terminal, otherwise in the default text editor. */
 export function openEditor(path: string, env: Env = readEnv()): boolean {
   if (env.TERM_PROGRAM === "vscode") {
-    const preferred = env.CURSOR_TRACE_ID || /cursor/i.test(env.VSCODE_GIT_ASKPASS_NODE ?? "") ? ["cursor", "code"] : ["code", "cursor"];
+    const preferred = insideCursor(env) ? ["cursor", "code"] : ["code", "cursor"];
     for (const editor of preferred) {
       if (onPath(editor) && detached(editor, [path])) return true;
     }

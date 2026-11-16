@@ -28,7 +28,7 @@ Restart Claude Code afterwards.
 - **Programs it starts:** `/tree:fork` starts a new `claude` session in a macOS Terminal window through `osascript`. `--review` opens the brief in Cursor, VS Code or the default text editor. `/tree:view` opens the tree page in your default browser.
 - **Files it reads:** Claude Code's session files under `~/.claude/projects` (titles and the last exchanges you ask for with `--last N`), and its own files below.
 - **Files it writes:** briefs, results and fork records in `~/.claude/session-tree/`, which you can open and read.
-- **Environment variables it reads:** `CLAUDE_CONFIG_DIR`, `SESSION_TREE_DIR`, `SESSION_TREE_CLAUDE_ARGS`, `TERM_PROGRAM`, `CURSOR_TRACE_ID` and `VSCODE_GIT_ASKPASS_NODE`. It reads no credentials.
+- **Environment variables it reads:** `CLAUDE_CONFIG_DIR`, `SESSION_TREE_DIR`, `SESSION_TREE_CLAUDE_ARGS`, `TERM_PROGRAM` and `VSCODE_GIT_ASKPASS_NODE` (the last two only to tell Cursor from VS Code when opening the brief for review; the second is checked for the word "cursor" and its value is not used otherwise). It reads no credentials.
 - **Network:** none. Nothing leaves your machine, and the tree page loads no external resources.
 - **What it adds to a conversation:** a fork result is added to the parent conversation as context with your next message there, and a short notice tells you so.
 
