@@ -12,7 +12,7 @@ This describes how the `tree` plugin works, its data formats, and how to develop
 | Hooks | `plugins/tree/hooks/hooks.json` | `SessionStart` runs `st.mjs hook-session-start`. `UserPromptSubmit` runs `prompt-check.sh`. Both time out after 10 seconds. |
 | Prompt fast path | `plugins/tree/hooks/prompt-check.sh` | Exits at once unless `pending/<session_id>` exists; only then starts Node. |
 | CLI | `plugins/tree/scripts/st.mjs` | Bundled from `src/` by esbuild, with no runtime dependencies. |
-| Viewer template | `plugins/tree/viewer/template.html` | Built from `src/viewer/template.html` with Cytoscape.js and cytoscape-dagre inlined. |
+| Viewer template | `plugins/tree/viewer/template.html` | Built from `src/viewer/template.html` with the layout code (`src/viewer/layout.ts`) inlined. No third-party code; about 25 KB. |
 
 ## Flow
 
@@ -144,7 +144,7 @@ Transcripts are read from the `sessions/` record's `transcriptPath`. If there is
 
 `tree` builds the data from all fork records: one node per session involved and one `fork` edge per fork, plus a `return` edge once the fork has returned. Each fork node carries its state, timestamps, brief, result and file paths. The data is embedded in the template as JSON, with `<`, U+2028 and U+2029 escaped so it can't break out of the script tag. The page has no external requests.
 
-Layout uses dagre over the fork edges only; return edges are drawn afterwards as dashed curves. `#select=<sessionId>` in the URL opens that node's details.
+The page is plain SVG with no libraries. `src/viewer/layout.ts` places the boxes (a tidy tree over the fork edges, children side by side below their parent); return edges are drawn afterwards as dashed curves that run beside the fork edges. A click selects, a double click folds a branch, the wheel zooms, dragging the background pans. `#select=<sessionId>` in the URL opens that node's details.
 
 ## Settings
 
@@ -174,6 +174,7 @@ Environment variables:
 npm install
 npm test                         # builds plugins/tree from src/, then runs the unit tests
 npm run typecheck
+node scripts/check-viewer.mjs     # drives the page in headless Chrome with real mouse events (--screenshot FILE, --dark)
 sh scripts/e2e-claude.sh         # full cycle against real Claude Code (haiku, a few cents)
 claude --plugin-dir plugins/tree # try the plugin without installing it
 claude plugin validate plugins/tree --strict

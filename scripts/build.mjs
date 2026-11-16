@@ -17,18 +17,22 @@ await build({
   legalComments: "none",
 });
 
-const vendor = ["cytoscape/dist/cytoscape.min.js", "cytoscape-dagre/dist/cytoscape-dagre.min.js"]
-  .map((file) =>
-    readFileSync(join(root, "node_modules", file), "utf8")
-      .replace(/^\/\/# sourceMappingURL=.*$/gm, "")
-      .replace(/<\/script/gi, "<\\/script"),
-  )
-  .map((code) => `<script>\n${code}\n</script>`)
-  .join("\n");
+// The viewer's layout code is plain TypeScript with unit tests; it is inlined into the page as the global SessionTreeLayout.
+const layout = await build({
+  entryPoints: [join(root, "src", "viewer", "layout.ts")],
+  bundle: true,
+  write: false,
+  format: "iife",
+  globalName: "SessionTreeLayout",
+  platform: "browser",
+  target: "es2020",
+  legalComments: "none",
+});
+const layoutScript = `<script>\n${layout.outputFiles[0].text.replace(/<\/script/gi, "<\\/script")}</script>`;
 
 const template = readFileSync(join(root, "src", "viewer", "template.html"), "utf8");
-if (!template.includes("<!-- VENDOR -->")) throw new Error("src/viewer/template.html has no <!-- VENDOR --> marker");
+if (!template.includes("<!-- LAYOUT -->")) throw new Error("src/viewer/template.html has no <!-- LAYOUT --> marker");
 mkdirSync(join(plugin, "viewer"), { recursive: true });
-writeFileSync(join(plugin, "viewer", "template.html"), template.replace("<!-- VENDOR -->", () => vendor));
+writeFileSync(join(plugin, "viewer", "template.html"), template.replace("<!-- LAYOUT -->", () => layoutScript));
 
 console.log("built plugins/tree/scripts/st.mjs and plugins/tree/viewer/template.html");

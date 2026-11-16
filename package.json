@@ -17,8 +17,6 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "cytoscape": "^3.34.4",
-    "cytoscape-dagre": "^4.0.1",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"

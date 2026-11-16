@@ -22,6 +22,7 @@
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
   header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
   header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  a { color: var(--accent); }
   header .meta { color: var(--muted); font-size: 12px; }
   .controls { display: flex; gap: 8px; align-items: center; margin-left: auto; flex-wrap: wrap; }
   select, input[type=search], button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
@@ -29,7 +30,8 @@
   button:hover { border-color: var(--accent); }
   main { display: grid; grid-template-columns: 1fr 420px; height: calc(100% - 53px); }
   #graph { position: relative; min-width: 0; }
-  #cy { position: absolute; inset: 0; }
+  #graph-svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; user-select: none; }
+  #graph-svg text { font-family: inherit; pointer-events: none; }
   .legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
   .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); border: 1px dashed transparent; }
   .legend .draft::before { background: transparent; border-color: var(--draft); }
@@ -74,7 +76,7 @@
 </header>
 <main>
   <section id="graph">
-    <div id="cy"></div>
+    <svg id="graph-svg" role="img" aria-label="Tree of conversations and their forks"></svg>
     <div class="legend">
       <span style="--c: var(--root)">Main conversation</span>
       <span style="--c: var(--returned)">Fork returned</span>
@@ -87,7 +89,7 @@
   <aside id="details"><p class="placeholder">Select a conversation or fork to see its brief and result.</p></aside>
 </main>
 
-<!-- VENDOR -->
+<!-- LAYOUT -->
 
 <script>
 const DATA = "__SESSION_TREE_DATA__";
@@ -150,75 +152,175 @@ function displayLabel(node) {
   return node.fork.topic;
 }
 
-const elements = [
-  ...DATA.nodes.map((node) => ({
-    data: { id: node.id, label: displayLabel(node), kind: node.fork ? "fork" : "root", state: node.fork ? node.fork.state : "root", project: nodesById.get(rootOf(node.id)).cwd || "" },
-  })),
-  ...DATA.edges.map((edge) => ({ data: { id: edge.id, source: edge.source, target: edge.target, kind: edge.kind, label: edge.label } })),
-];
+const SVGNS = "http://www.w3.org/2000/svg";
+const NODE_W = 200, NODE_H = 60, GAP_X = 34, GAP_Y = 90, RETURN_OFFSET = 40;
+const svg = document.getElementById("graph-svg");
+const make = (name, attrs, parent) => {
+  const node = document.createElementNS(SVGNS, name);
+  for (const [key, value] of Object.entries(attrs || {})) node.setAttribute(key, value);
+  if (parent) parent.appendChild(node);
+  return node;
+};
+const viewport = make("g", {}, svg);
+let view = { x: 0, y: 0, k: 1 };
+const applyView = () => viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.k})`);
 
-const cy = cytoscape({
-  container: document.getElementById("cy"),
-  elements,
-  wheelSensitivity: 0.3,
-  minZoom: 0.2,
-  maxZoom: 2.5,
-  style: [
-    { selector: "node", style: {
-      shape: "round-rectangle", label: "data(label)", "text-wrap": "wrap", "text-max-width": 180, "text-valign": "center", "text-halign": "center",
-      "font-size": 12, color: "#fff", width: 200, height: 54, padding: 6, "background-color": css("--open"), "border-width": 0,
-    } },
-    { selector: 'node[kind="root"]', style: { "background-color": css("--root"), "font-weight": 600, "font-size": 13, height: 60 } },
-    { selector: 'node[state="returned"]', style: { "background-color": css("--returned") } },
-    { selector: 'node[state="not-returned"]', style: { "background-color": css("--open"), opacity: 0.75 } },
-    { selector: 'node[state="draft"]', style: { "background-color": css("--panel"), color: css("--text"), "border-width": 2, "border-style": "dashed", "border-color": css("--draft") } },
-    { selector: "node:selected", style: { "border-width": 3, "border-style": "solid", "border-color": css("--text") } },
-    { selector: "node.folded", style: { "border-width": 3, "border-style": "double", "border-color": css("--text") } },
-    { selector: "edge", style: {
-      width: 2, "curve-style": "bezier", "line-color": css("--border"), "target-arrow-shape": "triangle", "target-arrow-color": css("--border"),
-      label: "data(label)", "font-size": 10, color: css("--muted"), "text-background-color": css("--bg"), "text-background-opacity": 1, "text-background-padding": 2,
-    } },
-    { selector: 'edge[kind="return"]', style: {
-      "line-style": "dashed", "line-color": css("--returned"), "target-arrow-color": css("--returned"), "curve-style": "bezier", "control-point-step-size": 50,
-    } },
-    { selector: ".hidden", style: { display: "none" } },
-    { selector: ".dimmed", style: { opacity: 0.25 } },
-  ],
-  layout: { name: "preset" },
-});
+const childrenOf = new Map();
+const forkEdges = DATA.edges.filter((edge) => edge.kind === "fork");
+for (const edge of forkEdges) {
+  if (!childrenOf.has(edge.source)) childrenOf.set(edge.source, []);
+  childrenOf.get(edge.source).push(edge.target);
+}
+const folded = new Set();
+let selected = null;
+let positions = new Map();
+const rects = new Map();
 
-function relayout() {
-  const visible = cy.elements().not(".hidden");
-  visible.filter((el) => el.isNode() || el.data("kind") === "fork")
-    .layout({ name: "dagre", rankDir: "TB", nodeSep: 40, rankSep: 70, animate: false, fit: true, padding: 30 })
-    .run();
+function currentRoots() {
+  const project = document.getElementById("project").value;
+  return DATA.nodes.filter((node) => !parentOf.has(node.id) && (!project || (node.cwd || "") === project)).map((node) => node.id);
 }
 
-function descendants(node) {
-  return node.successors('edge[kind="fork"]').targets();
+function isDimmed(node) {
+  if (!node.fork) return false;
+  const state = document.getElementById("state").value;
+  const query = document.getElementById("search").value.trim().toLowerCase();
+  const text = `${node.title} ${node.fork.topic} ${node.fork.brief || ""} ${node.fork.result || ""}`.toLowerCase();
+  return (state !== "all" && node.fork.state !== state) || (query !== "" && !text.includes(query));
+}
+
+const bezier = (a, b, c, d, t) => { const u = 1 - t; return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d; };
+
+function edgeLabel(parent, x, y, text, anchor) {
+  const group = make("g", {}, parent);
+  const label = make("text", { x, y: y + 3.5, "text-anchor": anchor, "font-size": 10.5, fill: css("--muted") }, group);
+  label.textContent = text;
+  const box = label.getBBox();
+  group.insertBefore(make("rect", { x: box.x - 3, y: box.y - 1, width: box.width + 6, height: box.height + 2, rx: 3, fill: css("--bg") }), label);
+  return group;
+}
+
+// The outline shows the selected box. It is restyled in place: replacing the boxes during a click makes the browser drop the click.
+function paintSelection() {
+  for (const [id, rect] of rects) {
+    const draft = nodesById.get(id).fork?.state === "draft";
+    const isSelected = id === selected;
+    rect.setAttribute("stroke", isSelected ? css("--text") : draft ? css("--draft") : "none");
+    rect.setAttribute("stroke-width", isSelected ? 3 : 2);
+    rect.setAttribute("stroke-dasharray", draft && !isSelected ? "6 4" : "none");
+  }
+}
+
+function draw() {
+  rects.clear();
+  viewport.replaceChildren();
+  svg.querySelectorAll("defs").forEach((defs) => defs.remove());
+  const defs = make("defs", {}, svg);
+  for (const [id, color] of [["arrow-fork", css("--muted")], ["arrow-return", css("--returned")]]) {
+    const marker = make("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }, defs);
+    make("path", { d: "M0,0 L10,5 L0,10 z", fill: color }, marker);
+  }
+  const edgeLayer = make("g", {}, viewport);
+  const nodeLayer = make("g", {}, viewport);
+  const top = (p) => p.cy - NODE_H / 2;
+  const bottom = (p) => p.cy + NODE_H / 2;
+
+  for (const edge of DATA.edges) {
+    if (!positions.has(edge.source) || !positions.has(edge.target)) continue;
+    const dimmed = isDimmed(nodesById.get(edge.kind === "fork" ? edge.target : edge.source));
+    const group = make("g", { opacity: dimmed ? 0.25 : 1 }, edgeLayer);
+    if (edge.kind === "fork") {
+      const p = positions.get(edge.source), c = positions.get(edge.target);
+      const y1 = bottom(p), y2 = top(c), m = (y2 - y1) / 2;
+      make("path", { d: `M${p.cx},${y1} C${p.cx},${y1 + m} ${c.cx},${y2 - m} ${c.cx},${y2}`, fill: "none", stroke: css("--muted"), "stroke-width": 1.5, "marker-end": "url(#arrow-fork)" }, group);
+      edgeLabel(group, bezier(p.cx, p.cx, c.cx, c.cx, 0.72), bezier(y1, y1 + m, y2 - m, y2, 0.72), edge.label, "middle");
+    } else {
+      const c = positions.get(edge.source), p = positions.get(edge.target);
+      const x1 = c.cx - RETURN_OFFSET, y1 = top(c), x2 = p.cx - RETURN_OFFSET, y2 = bottom(p), m = (y1 - y2) / 2;
+      make("path", { d: `M${x1},${y1} C${x1},${y1 - m} ${x2},${y2 + m} ${x2},${y2}`, fill: "none", stroke: css("--returned"), "stroke-width": 2, "stroke-dasharray": "6 5", "marker-end": "url(#arrow-return)" }, group);
+      edgeLabel(group, bezier(x1, x1, x2, x2, 0.3) - 6, bezier(y1, y1 - m, y2 + m, y2, 0.3), edge.label, "end");
+    }
+  }
+
+  for (const [id, p] of positions) {
+    const node = nodesById.get(id);
+    const state = node.fork ? node.fork.state : "root";
+    const group = make("g", { "data-id": id, style: "cursor: pointer", opacity: isDimmed(node) ? 0.25 : 1 }, nodeLayer);
+    make("title", {}, group).textContent = node.fork ? `${node.fork.label} · ${node.fork.topic}` : node.title;
+    rects.set(id, make("rect", {
+      x: p.cx - NODE_W / 2, y: top(p), width: NODE_W, height: NODE_H, rx: 10,
+      fill: { root: css("--root"), returned: css("--returned"), "not-returned": css("--open"), draft: css("--panel") }[state],
+    }, group));
+    const lines = SessionTreeLayout.wrapText(displayLabel(node), state === "root" ? 22 : 25, 3);
+    const text = make("text", { "text-anchor": "middle", "font-size": state === "root" ? 13 : 12, "font-weight": state === "root" ? 600 : 400, fill: state === "draft" ? css("--text") : "#fff" }, group);
+    lines.forEach((line, i) => {
+      make("tspan", { x: p.cx, y: p.cy + 4 + (i - (lines.length - 1) / 2) * 15 }, text).textContent = line;
+    });
+    if (folded.has(id)) {
+      const badge = make("g", {}, group);
+      make("rect", { x: p.cx + NODE_W / 2 - 38, y: p.cy + NODE_H / 2 - 11, width: 42, height: 20, rx: 10, fill: css("--panel"), stroke: css("--text"), "stroke-width": 1.5 }, badge);
+      make("text", { x: p.cx + NODE_W / 2 - 17, y: p.cy + NODE_H / 2 + 3, "text-anchor": "middle", "font-size": 11, fill: css("--text") }, badge)
+        .textContent = `+${SessionTreeLayout.descendantCount(childrenOf, id)}`;
+    }
+  }
+  paintSelection();
+}
+
+function fitView() {
+  const bounds = SessionTreeLayout.boundsOf(positions, NODE_W, NODE_H);
+  if (!bounds) return;
+  const width = svg.clientWidth, height = svg.clientHeight, pad = 40;
+  const k = Math.min((width - pad * 2) / bounds.w, (height - pad * 2) / bounds.h, 1.3);
+  view = { k, x: (width - bounds.w * k) / 2 - bounds.x * k, y: Math.max(pad, (height - bounds.h * k) / 2) - bounds.y * k };
+  applyView();
 }
 
 function applyFilters() {
-  const project = document.getElementById("project").value;
-  const state = document.getElementById("state").value;
-  const query = document.getElementById("search").value.trim().toLowerCase();
-  cy.batch(() => {
-    cy.elements().removeClass("hidden dimmed");
-    cy.nodes().forEach((el) => {
-      if (project && el.data("project") !== project) el.addClass("hidden");
-    });
-    cy.nodes(".folded").forEach((el) => descendants(el).addClass("hidden"));
-    cy.edges().forEach((edge) => { if (edge.source().hasClass("hidden") || edge.target().hasClass("hidden")) edge.addClass("hidden"); });
-    if (state !== "all" || query) {
-      cy.nodes('[kind="fork"]').forEach((el) => {
-        const node = nodesById.get(el.id());
-        const text = `${node.title} ${node.fork.topic} ${node.fork.brief || ""} ${node.fork.result || ""}`.toLowerCase();
-        if ((state !== "all" && node.fork.state !== state) || (query && !text.includes(query))) el.addClass("dimmed");
-      });
-    }
-  });
-  relayout();
+  positions = SessionTreeLayout.computeLayout({ roots: currentRoots(), childrenOf, folded, nodeWidth: NODE_W, nodeHeight: NODE_H, gapX: GAP_X, gapY: GAP_Y });
+  draw();
+  fitView();
 }
+
+function selectNode(id) {
+  selected = id;
+  paintSelection();
+  showDetails(id);
+}
+
+// Pan with the pointer, zoom with the wheel, select with a click, fold a branch with a double click.
+let drag = null;
+svg.addEventListener("pointerdown", (event) => {
+  const hit = event.target.closest("[data-id]");
+  drag = { x: event.clientX, y: event.clientY, originX: view.x, originY: view.y, moved: false, id: hit ? hit.dataset.id : null };
+});
+svg.addEventListener("pointermove", (event) => {
+  if (!drag) return;
+  const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+  if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; svg.setPointerCapture(event.pointerId); svg.style.cursor = "grabbing"; }
+  if (drag.moved) { view.x = drag.originX + dx; view.y = drag.originY + dy; applyView(); }
+});
+const endDrag = (event) => {
+  const finished = drag;
+  drag = null;
+  svg.style.cursor = "";
+  if (finished && !finished.moved && finished.id && event.type === "pointerup") selectNode(finished.id);
+};
+svg.addEventListener("pointerup", endDrag);
+svg.addEventListener("pointercancel", endDrag);
+svg.addEventListener("dblclick", (event) => {
+  const hit = event.target.closest("[data-id]");
+  if (!hit || !(childrenOf.get(hit.dataset.id) || []).length) return;
+  if (!folded.delete(hit.dataset.id)) folded.add(hit.dataset.id);
+  applyFilters();
+});
+svg.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  const x = event.clientX - rect.left, y = event.clientY - rect.top;
+  const k = Math.min(2.5, Math.max(0.2, view.k * Math.exp(-event.deltaY * 0.0015)));
+  view = { x: x - (x - view.x) * (k / view.k), y: y - (y - view.y) * (k / view.k), k };
+  applyView();
+}, { passive: false });
 
 function copyButton(text, label) {
   return `<button data-copy="${escapeHtml(text)}">${escapeHtml(label)}</button>`;
@@ -278,17 +380,7 @@ document.getElementById("details").addEventListener("click", (event) => {
   const select = event.target.closest("[data-select]");
   if (select) {
     event.preventDefault();
-    cy.$(":selected").unselect();
-    cy.getElementById(select.dataset.select).select();
-    showDetails(select.dataset.select);
-  }
-});
-
-cy.on("tap", "node", (event) => showDetails(event.target.id()));
-cy.on("dbltap", "node", (event) => {
-  if (descendants(event.target).length) {
-    event.target.toggleClass("folded");
-    applyFilters();
+    selectNode(select.dataset.select);
   }
 });
 
@@ -298,7 +390,7 @@ projectSelect.innerHTML = `<option value="">All projects (${projects.length})</o
   projects.map((cwd) => `<option value="${escapeHtml(cwd)}">${escapeHtml(projectName(cwd))}</option>`).join("");
 for (const id of ["project", "state"]) document.getElementById(id).addEventListener("change", applyFilters);
 document.getElementById("search").addEventListener("input", applyFilters);
-document.getElementById("fit").addEventListener("click", () => cy.fit(cy.elements().not(".hidden"), 30));
+document.getElementById("fit").addEventListener("click", () => fitView());
 
 const forkCount = DATA.nodes.filter((node) => node.fork).length;
 document.getElementById("meta").textContent =
@@ -311,8 +403,7 @@ applyFilters();
 
 const initial = new URLSearchParams(location.hash.slice(1)).get("select");
 if (initial && nodesById.has(initial)) {
-  cy.getElementById(initial).select();
-  showDetails(initial);
+  selectNode(initial);
 }
 </script>
 </body>
